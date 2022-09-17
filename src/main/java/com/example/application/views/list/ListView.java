@@ -3,6 +3,7 @@ package com.example.application.views.list;
 import com.example.application.data.entity.Contact;
 import com.example.application.data.service.CrmService;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -36,6 +37,13 @@ public class ListView extends VerticalLayout {
         );
 
         updateList();
+        closeEditor();
+    }
+
+    private void closeEditor() {
+        form.setContact(null);
+        form.setVisible(false);
+        removeClassName("editing");
     }
 
     private void updateList() {
@@ -55,6 +63,11 @@ public class ListView extends VerticalLayout {
     private void configuredForm() {
         form = new ContactForm(service.findAllCompanies(), service.findAllStatuses());
         form.setWidth("25em");
+
+        form.addListener(ContactForm.SaveEvent.class, this::saveContact);
+    }
+
+    private <T extends ComponentEvent<?>> void saveContact(T t) {
     }
 
     private Component getToolbar() {
@@ -63,11 +76,18 @@ public class ListView extends VerticalLayout {
         filterText.setValueChangeMode(ValueChangeMode.LAZY);
         filterText.addValueChangeListener(e -> updateList());
 
-        Button button = new Button("Add contact");
-        HorizontalLayout toolbar = new HorizontalLayout(filterText, button);
+        Button addContactBtn = new Button("Add contact");
+        addContactBtn.addClickListener((e -> addContact()));
+
+        HorizontalLayout toolbar = new HorizontalLayout(filterText, addContactBtn);
         toolbar.addClassName("toolbar");
 
         return toolbar;
+    }
+
+    private void addContact() {
+        grid.asSingleSelect().clear();
+        editContact(new Contact());
     }
 
     private void configureGrid() {
@@ -77,6 +97,18 @@ public class ListView extends VerticalLayout {
         grid.addColumn(contact -> contact.getStatus().getName()).setHeader("Status");
         grid.addColumn(contact -> contact.getCompany().getName()).setHeader("Company");
         grid.getColumns().forEach(column -> column.setAutoWidth(true));
+
+        grid.asSingleSelect().addValueChangeListener(e -> editContact(e.getValue()));
+    }
+
+    private void editContact(Contact contact) {
+        if (contact == null) {
+            closeEditor();
+        } else {
+            form.setContact(contact);
+            form.setVisible(true);
+            addClassName("editing");
+        }
     }
 
 }
